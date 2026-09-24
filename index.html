@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Minefun.io Top Parkour List</title>
+  <style>
+    body {
+      background: black;
+      color: lime;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+
+    input {
+      background: black;
+      color: lime;
+      border: 1px solid lime;
+      padding: 6px;
+      margin: 4px 0;
+      width: 90%;
+      max-width: 420px;
+    }
+
+    button {
+      background: #003300;
+      color: lime;
+      border: 1px solid lime;
+      padding: 6px 10px;
+      cursor: pointer;
+      margin: 4px 0;
+    }
+
+    #adminPanel {
+      display: none;
+      color: #006400;
+      border: 1px solid #006400;
+      padding: 12px;
+      margin-bottom: 18px;
+    }
+
+    #adminPanel input,
+    #adminPanel button {
+      color: #006400;
+      border-color: #006400;
+    }
+
+    .level {
+      color: #00ff00;
+      margin: 12px 0;
+    }
+
+    .indent {
+      margin-left: 24px;
+    }
+
+    a {
+      color: #00ff00;
+    }
+  </style>
+</head>
+
+<body>
+  <div>
+    Admin Password:
+    <input id="adminPassword" type="password" placeholder="____">
+    <button type="button" onclick="checkAdminPassword()">Enter</button>
+  </div>
+
+  <div id="adminPanel">
+    <div>See submitted verifications:</div>
+    <div id="submittedList"></div>
+
+    <br>
+
+    <div>Add level name:</div>
+    <input id="addLevelName" type="text">
+
+    <div>Publisher name:</div>
+    <input id="addPublisherName" type="text">
+
+    <div>Verifier name:</div>
+    <input id="addVerifierName" type="text">
+
+    <br>
+    <button type="button" onclick="addLevel()">Add Level</button>
+
+    <br><br>
+
+    <div>Delete level:</div>
+    <input id="deleteLevelName" type="text">
+    <br>
+    <button type="button" onclick="deleteLevel()">Delete Level</button>
+  </div>
+
+  <h2>Minefun.io top parkour list:</h2>
+  <div id="levelList"></div>
+
+  <br>
+
+  <div>Submit your verification here:</div>
+  <input id="verificationUrl" type="url" placeholder="Video URL">
+
+  <div class="indent">Raw footage:</div>
+  <input id="rawFootageUrl" type="url" placeholder="Video URL">
+
+  <div>If you want to submit something, you need to have the footage and raw footage :)</div>
+
+  <br>
+  <button type="button" onclick="submitVerification()">Submit</button>
+
+  <script>
+    const adminPassword = "gr33ndudeminefun@gmail.com";
+
+    let levels = JSON.parse(localStorage.getItem("minefunLevels")) || [
+      {
+        name: "Test level",
+        publisher: "random_player",
+        verifier: "pro_player"
+      }
+    ];
+
+    let submissions = JSON.parse(localStorage.getItem("minefunSubmissions")) || [];
+
+    function saveData() {
+      localStorage.setItem("minefunLevels", JSON.stringify(levels));
+      localStorage.setItem("minefunSubmissions", JSON.stringify(submissions));
+    }
+
+    function cleanText(text) {
+      return String(text).replace(/[&<>"']/g, function(char) {
+        return {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': "&quot;",
+          "'": "&#039;"
+        }[char];
+      });
+    }
+
+    function renderLevels() {
+      const levelList = document.getElementById("levelList");
+
+      levelList.innerHTML = levels.map(function(level, index) {
+        return '<div class="level">' +
+          '<div>' + (index + 1) + '. ' + cleanText(level.name) + '</div>' +
+          '<div class="indent">Publisher: ' + cleanText(level.publisher) + '</div>' +
+          '<div class="indent">Verifier: ' + cleanText(level.verifier) + '</div>' +
+        '</div>';
+      }).join("");
+    }
+
+    function renderSubmissions() {
+      const submittedList = document.getElementById("submittedList");
+
+      submittedList.innerHTML = submissions.map(function(submission) {
+        return '<div>' +
+          '<a href="' + cleanText(submission.verification) + '" target="_blank">' + cleanText(submission.verification) + '</a> has been submitted' +
+          '<div class="indent">Raw footage: <a href="' + cleanText(submission.raw) + '" target="_blank">' + cleanText(submission.raw) + '</a> has been submitted</div>' +
+        '</div><br>';
+      }).join("");
+    }
+
+    function checkAdminPassword() {
+      const password = document.getElementById("adminPassword").value;
+
+      if (password === adminPassword) {
+        document.getElementById("adminPanel").style.display = "block";
+        renderSubmissions();
+      }
+    }
+
+    function submitVerification() {
+      const verificationUrl = document.getElementById("verificationUrl").value.trim();
+      const rawFootageUrl = document.getElementById("rawFootageUrl").value.trim();
+
+      if (!verificationUrl || !rawFootageUrl) {
+        return;
+      }
+
+      submissions.push({
+        verification: verificationUrl,
+        raw: rawFootageUrl
+      });
+
+      saveData();
+
+      document.getElementById("verificationUrl").value = "";
+      document.getElementById("rawFootageUrl").value = "";
+
+      renderSubmissions();
+    }
+
+    function addLevel() {
+      const name = document.getElementById("addLevelName").value.trim();
+      const publisher = document.getElementById("addPublisherName").value.trim();
+      const verifier = document.getElementById("addVerifierName").value.trim();
+
+      if (!name || !publisher || !verifier) {
+        return;
+      }
+
+      levels.push({
+        name: name,
+        publisher: publisher,
+        verifier: verifier
+      });
+
+      saveData();
+      renderLevels();
+
+      document.getElementById("addLevelName").value = "";
+      document.getElementById("addPublisherName").value = "";
+      document.getElementById("addVerifierName").value = "";
+    }
+
+    function deleteLevel() {
+      const deleteName = document.getElementById("deleteLevelName").value.trim().toLowerCase();
+
+      levels = levels.filter(function(level) {
+        return level.name.toLowerCase() !== deleteName;
+      });
+
+      saveData();
+      renderLevels();
+
+      document.getElementById("deleteLevelName").value = "";
+    }
+
+    renderLevels();
+  </script>
+</body>
+</html>
